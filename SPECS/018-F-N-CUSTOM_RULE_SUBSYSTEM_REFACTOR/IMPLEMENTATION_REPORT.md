@@ -10,7 +10,7 @@
 
 ## Изменённые файлы
 
-- `ui/wizard/dialogs/rule_dialog.go` — константы типов (ips, urls, processes, srs, raw), подписи для UI
+- `ui/wizard/dialogs/rule_dialog.go` — подписи типов для UI и ключи (ProcessKey и т.д.); значения типов — в wizardmodels (единый источник истины)
 - `ui/wizard/dialogs/add_rule_dialog.go` — вкладки Form/Raw, тип SRS, params при сохранении/загрузке, использование DetermineRuleType при редактировании
 - `ui/wizard/models/wizard_state_file.go` — PersistedCustomRule (Params, RuleSet), DetermineRuleType (только 5 констант), ToPersistedCustomRule, ToRuleState
 - `ui/wizard/template/loader.go` — поле Params в TemplateSelectableRule
@@ -33,11 +33,18 @@
 ## Дополнительные доработки UI (по ходу задачи)
 
 - **Rule name над вкладками:** Поле «Rule Name» вынесено над переключением Form/Raw; раскладка диалога — Border (сверху Rule name, снизу кнопки, центр — вкладки на всю высоту).
-- **Domains/URLs — схема по центру:** Вместо радио-группы выпадающий список (Exact domains / Suffix / Keyword / Regex) справа от типа Domains/URLs, по центру строки (как «Match by path» у Processes). Поддержка domain_suffix и domain_keyword на форме; при Raw→Form и при редактировании восстанавливаются режим и список.
+- **Domains/URLs — схема по центру:** Выпадающий список (Exact domains / Suffix / Keyword / Regex) справа от типа Domains/URLs, по центру строки — **показывается только при выбранном типе Domains/URLs** (аналогично галочке «Match by path» у Processes). Поддержка domain_suffix и domain_keyword на форме; при Raw→Form и при редактировании восстанавливаются режим и список.
 - **Raw → Form: outbound:** При переключении с Raw на Form значение outbound в форме выставляется из поля `outbound` или `action` распознанного правила.
 - **SRS — подсказка:** Кнопка «?» рядом с полем SRS URLs; по нажатию — информационное окно с рекомендацией искать rule-set'ы в runetfreedom, кнопка «Open» открывает ссылку в браузере.
 - **Placeholder для Regex (Domains):** Для режима Regex в Domains/URLs задан поясняющий placeholder с примером регулярного выражения.
 - **Кнопка Add при SRS:** Подключён OnChanged для поля SRS URLs, чтобы кнопка Add/Save разблокировалась при вводе URL без повторного изменения названия.
+
+## Доработки после первого коммита
+
+- **Единый источник констант типов:** Строковые значения типов (ips, urls, processes, srs, raw) заданы только в `wizardmodels`; в `rule_dialog.go` оставлены подписи для UI и ключи полей.
+- **Params при сохранении:** В `ToPersistedCustomRule` выполняется поверхностная копия `Params`, чтобы последующая мутация `ruleState.Rule.Params` не влияла на сохранённые данные.
+- **stripUTF8BOM:** Удаление BOM только в начале файла шаблона (убрана обработка в конце).
+- **Дублирование:** Убран лишний вызов `pathModeRadio.SetSelected("Simple")`.
 
 ## Assumptions
 
