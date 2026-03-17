@@ -16,6 +16,7 @@
 Черновик следующего релиза (draft): [upcoming.md](docs/release_notes/upcoming.md)
 
 **🇷🇺 Кратко (черновик):**
+- **Локализация интерфейса (выбор языка):** Появился выбор языка на вкладке «Помощь». Английский встроен в бинарник, дополнительные языки (русский, немецкий, испанский, французский, итальянский, китайский, португальский (Бразилия), японский, корейский, турецкий) подгружаются из `bin/locale/` и могут быть скачаны/обновлены с GitHub той же кнопкой. Настройки языка сохраняются в `bin/settings.json`.
 - **Пользовательские SRS-правила — локальное скачивание:** Для правил типа SRS в визарде добавлена локальная загрузка SRS (кнопка ⬇/🔄/✔️). При наличии локальных файлов `bin/rule-sets/<tag>.srs` конфиг использует `type: "local"` с `path` вместо remote `url`.
 - **Рефакторинг Custom Rule (типы, Raw, SRS, params):** Типы правил — константы (ips, urls, processes, srs, raw). Диалог Add/Edit Rule: название над вкладками Form/Raw; режимы Domains (Exact/Suffix/Keyword/Regex); тип SRS с подсказкой runetfreedom; при Raw→Form восстанавливаются outbound и поля по типу. Состояние UI в params.
 - **Правило Processes — Match by path:** В диалоге Add/Edit Rule для типа «Processes» можно включить «Match by path» и задавать сопоставление по пути процесса (regex), а не по имени. Режим Simple: подстановка `*` как «любая последовательность» (например `*/steam/*`). Режим Regex: полные регулярные выражения. В конфиг записывается `process_path_regex` (sing-box 1.10+).
@@ -27,6 +28,7 @@
 - **Win7 CI:** Сборка Win7 (job `build-win7`) использует `go.win7.mod` с `golang.org/x/sys v0.25.0` (Go 1.20). Артефакт `singbox-launcher-<version>-win7-32.zip` стабильно попадает в release.
 
 **🇬🇧 Summary (draft):**
+- **UI localization (language selector):** A language selector has been added to the Help tab. English strings are embedded in the binary, while additional languages (Russian, German, Spanish, French, Italian, Chinese, Portuguese (Brazil), Japanese, Korean, Turkish) are loaded from JSON files in `bin/locale/` and can be downloaded/updated from GitHub with a single button. The selected language is persisted in `bin/settings.json`.
 - **Custom SRS rules — local download:** Custom rules of type SRS now support local SRS downloads in the Wizard Rules tab (⬇/🔄/✔️ button). When local files exist (`bin/rule-sets/<tag>.srs`), the generated config uses `type: "local"` with `path` instead of remote `url`.
 - **Custom Rule refactor (types, Raw, SRS, params):** Rule type constants (ips, urls, processes, srs, raw). Add/Edit Rule: name above Form/Raw tabs; Domains mode (Exact/Suffix/Keyword/Regex); SRS type with runetfreedom hint; Raw→Form restores outbound and fields. UI state in params.
 - **Processes rule — Match by path:** In Add/Edit Rule, for type «Processes» enable «Match by path» to match by process path (regex). Simple: `*` as wildcard (e.g. `*/steam/*`). Regex: full regular expressions. Stored as `process_path_regex` (sing-box 1.10+).

@@ -1,0 +1,17 @@
+{
+  "_display_name": "日本語",
+
+  "app.tab.core": "⚙️ コア",
+  "app.tab.servers": "🖥️ サーバー",
+  "app.tab.diagnostics": "🔍 診断",
+  "app.tab.help": "❓ ヘルプ",
+
+  "help.language_label": "言語：",
+  "help.language_changed": "言語が変更されました。アプリを再起動すると完全に適用されます。",
+  "help.download_locales": "📥 翻訳をダウンロード",
+  "help.download_locales_btn": "⬇",
+  "help.download_locales_success": "翻訳をダウンロードしました（%d）。再起動すると新しい言語が表示されます。",
+  "help.download_locales_failed": "翻訳をダウンロードできませんでした",
+  "help.downloading_locales": "ダウンロード中...",
+  "help.downloading_locales_btn": "🔄"
+}

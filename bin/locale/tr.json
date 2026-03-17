@@ -1,0 +1,17 @@
+{
+  "_display_name": "Türkçe",
+
+  "app.tab.core": "⚙️ Çekirdek",
+  "app.tab.servers": "🖥️ Sunucular",
+  "app.tab.diagnostics": "🔍 Tanılama",
+  "app.tab.help": "❓ Yardım",
+
+  "help.language_label": "Dil:",
+  "help.language_changed": "Dil değiştirildi. Tüm değişikliklerin uygulanması için uygulamayı yeniden başlatın.",
+  "help.download_locales": "📥 Çevirileri indir",
+  "help.download_locales_btn": "⬇",
+  "help.download_locales_success": "Çeviriler indirildi (%d). Yeni dilleri görmek için yeniden başlatın.",
+  "help.download_locales_failed": "Çeviriler indirilemedi",
+  "help.downloading_locales": "İndiriliyor...",
+  "help.downloading_locales_btn": "🔄"
+}
