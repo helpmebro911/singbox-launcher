@@ -52,5 +52,8 @@
 - **017** — фича завершена (F-C): RULE_TYPE_PROCESS_PATH_REGEX (Match by path)
 - **018** — фича в плане (F-N): CUSTOM_RULE_SUBSYSTEM_REFACTOR (объединяющая: константы типов ips/urls/processes/raw, вкладка Raw, params в custom_rules, документация по state в docs/)
 - **015** — исследование закрыто (Q-C): TELEMETRY
+- **019** — фича завершена (F-C): WIN7_ADAPTATION
+- **020** — фича завершена (F-C): CUSTOM_SRS_LOCAL_DOWNLOAD
+- **021** — фича завершена (F-C): SOCKS5_URI (парсинг socks5:// и socks:// в Source/Connections)
 
 Подробное описание каждой задачи — в SPEC.md соответствующей папки.
