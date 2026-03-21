@@ -57,5 +57,6 @@
 - **021** — фича завершена (F-C): SOCKS5_URI (парсинг socks5:// и socks:// в Source/Connections)
 - **022** — фича в плане (F-N): MACOS_APP_SUPPORT_DIRECTORIES (данные в `~/Library` при запуске из `.app`, изменяемый Bundle ID, по умолчанию `com.singbox-launcher`)
 - **023** — фича завершена (F-C): SUBSCRIPTION_TRANSPORT_VLESS_TROJAN (transport/TLS для VLESS и Trojan из подписки по схеме sing-box, VMess gRPC `service_name`, MakeTagUnique в превью визарда)
+- **025** — фича завершена (F-C): SERVERS_CONTEXT_MENU_SHARE_URI (ПКМ на вкладке Servers, share URI из config.json outbounds/endpoints; см. **IMPLEMENTATION_REPORT.md**)
 
 Подробное описание каждой задачи — в SPEC.md соответствующей папки.
