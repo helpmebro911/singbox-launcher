@@ -1,33 +1,33 @@
-# Задачи: Edit-окно источника, локальные auto/select, exclude_from_global
+# Задачи: Edit-окно источника, локальные auto/select, два bool на ProxySource
 
 ## Этап 1: Модель и парсер
 
-- [ ] Добавить в **`ProxySource`** bool-поле (имя зафиксировать в коде и SPEC), `omitempty` в JSON.
-- [ ] Добавить в **`ParsedNode`** индекс источника; выставлять во всех путях, ведущих в `GenerateOutboundsFromParserConfig` (подписка + connections).
-- [ ] В **`buildOutboundsInfo`** (или рядом): для глобальных селекторов фильтровать `allNodes` с учётом `exclude_from_global`; локальные селекторы без изменений.
-- [ ] Юнит-тесты: глобальный селектор без фильтра не перечисляет ноды исключённого источника; локальный urltest/selector источника по-прежнему наполняется.
-- [ ] При необходимости обновить **`migrator`** и константу версии ParserConfig.
+- [ ] **`ProxySource`:** **`exclude_from_global`**, **`expose_group_tags_to_global`** — см. **SPEC.md** раздел **«Новые поля»**.
+- [ ] **`ParsedNode.SourceIndex`** (или эквивалент); выставлять на всех путях в **`GenerateOutboundsFromParserConfig`**.
+- [ ] Все глобальные **`ParserConfig.outbounds`**: фильтрация пула нод по **`exclude_from_global`** (тип не ограничивать); локальные — **`nodesBySource[i]`**.
+- [ ] Тесты: exclude; **`expose`** + эффективный список; **`outbounds[].filters`** отсекают expose при несовпадении синтетики (**SPEC §5**); JSON **`addOutbounds`** без фильтра; сериализованный **`addOutbounds`** не меняется из‑за **`expose`**; локальные urltest/selector источника работают.
+- [ ] При необходимости: **`migrator`**, версия ParserConfig.
 
-## Этап 2: UI — окно Edit
+## Этап 2: UI — Edit
 
-- [ ] Переименовать кнопку **View → Edit** (локали).
-- [ ] Реализовать два внутренних таба: **Настройки**, **Просмотр** (перенести текущий контент View во второй).
-- [ ] **Настройки:** префикс; чекбоксы локальный auto, локальный select, исключить из глобальных списков; логика select+auto как в SPEC.
-- [ ] Убрать дублирование редактора префикса со строки списка (оставить отображение или компактную подсказку — по PLAN).
-- [ ] Мягкое предупреждение при exclude без локальных групп (label или dialog — минимально навязчиво).
+- [ ] **View → Edit**, локали.
+- [ ] Табы **Настройки** / **Просмотр**.
+- [ ] Настройки по **SPEC** (таблица UI): префикс, auto, select, два bool, предупреждение exclude; **`expose`** всегда виден, без локальных групп — **Disabled** + tooltip; **`expose`/`exclude`** только в **`proxies[]`**, без мутации **`ParserConfig.outbounds`** в JSON (**PLAN §3**).
+- [ ] Префикс только в Edit; в списке — отображение.
+- [ ] Предупреждение exclude без пары auto+select — ключи локалей.
 
-## Этап 3: Сериализация чекбоксов
+## Этап 3: Сериализация и маркеры `WIZARD:`
 
-- [ ] Функции синхронизации флагов UI ↔ `proxies[i].outbounds` без удаления чужих ручных записей.
-- [ ] При сохранении визарда / сериализации ParserConfig порядок и валидность JSON сохраняются.
+- [ ] Синхронизация галочек ↔ **`proxies[i].outbounds`** (**SPEC §1–§2**).
+- [ ] Сохранение валидного ParserConfig JSON.
 
 ## Этап 4: Документация и закрытие
 
-- [ ] Обновить **`docs/ParserConfig.md`** (поля, примеры, сценарий глобальных `addOutbounds` на локальные теги).
-- [ ] **`docs/release_notes/upcoming.md`** после реализации.
-- [ ] **`IMPLEMENTATION_REPORT.md`**, переименовать папку в **`026-F-C-…`**.
+- [ ] **`docs/ParserConfig.md`** — по чеклисту **PLAN §6** (подраздел proxies, оба поля, пример, сценарии).
+- [ ] **`docs/release_notes/upcoming.md`**.
+- [ ] **`IMPLEMENTATION_REPORT.md`**, папка **`026-F-C-…`**.
 
 ## Проверки
 
-- [ ] `go vet ./...`, `go build ./...`, `go test ./...` (с учётом CONSTITUTION по GUI).
-- [ ] Ручная проверка: Edit → обе подвкладки; включение exclude и проверка превью/сгенерированного фрагмента outbounds.
+- [ ] `go vet ./...`, `go build ./...`, `go test ./...` (GUI — CONSTITUTION).
+- [ ] Ручная проверка: Edit, exclude, expose, превью outbounds.

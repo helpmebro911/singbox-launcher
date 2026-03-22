@@ -1,61 +1,60 @@
-# План: редактор источника (Edit) и `exclude_from_global` в ParserConfig
+# План: редактор источника (Edit), `exclude_from_global`, `expose_group_tags_to_global`
 
 ## 1. Архитектура UI
 
-- **Файл:** `ui/wizard/tabs/source_tab.go` (и при необходимости вынести диалог в `ui/wizard/dialogs/` если разрастётся).
-- Заменить `showSourceServersWindow` на что-то вроде `showSourceEditWindow`: сверху — как сейчас заголовок/закрытие; контент — **`container.AppTabs`** или **`widget.DocTabs`** Fyne с двумя табами:
-  - **Настройки** — форма;
-  - **Просмотр** — текущий список нод + статус (логика кэша `PreviewNodesBySource` / `RebuildPreviewCache` / fallback `fetchAndParseSource` сохраняется).
-- **Префикс:** перенести редактирование из строки списка источников в окно **Настройки** (один источник правки), либо оставить в строке только отображение и дублировать в окне — предпочтительно **один** контрол (в окне), в строке краткий текст префикса для сканирования списка без открытия Edit.
-- Синхронизация с моделью: те же пути, что у `prefixEntry.OnChanged` сегодня (`SerializeParserConfig`, `InvalidatePreviewCache`, `ScheduleRefreshOutboundOptionsDebounced`).
+- **Файл:** `ui/wizard/tabs/source_tab.go` (при росте — `ui/wizard/dialogs/`).
+- **`showSourceEditWindow`:** заголовок, закрытие; **`AppTabs` / `DocTabs`**: **Настройки** | **Просмотр** (кэш превью / `RebuildPreviewCache` / `fetchAndParseSource` как сейчас).
+- Префикс: редактирование в **Настройках**; в списке — только текст.
+- Сериализация: как у `prefixEntry.OnChanged` (`SerializeParserConfig`, `InvalidatePreviewCache`, `ScheduleRefreshOutboundOptionsDebounced`).
 
-## 2. Маппинг чекбоксов → `proxies[].outbounds`
+## 2. Локальные auto/select и маркеры `WIZARD:`
 
-- Ввести в бизнес-слое визарда (`ui/wizard/business/`) функции вида `ApplyLocalOutboundsFromFlags(proxy *ProxySource, auto, select, exclude bool)` или держать логику в презентере — главное: **идемпотентно** включать/выключать заранее описанные элементы `OutboundConfig`, не затирая **прочие** ручные записи в `proxies[i].outbounds`.
-- **Стратегия идентификации «наших» записей:** комментарий `wizard_managed` в `Comment`, или поле в `Options`, или фиксированные теги по шаблону `{tag_prefix}auto` / `{tag_prefix}select` — выбрать один способ в реализации и зафиксировать в IMPLEMENTATION_REPORT.
-- **Локальный auto (`urltest`):** `type: urltest`, `filters` охватывают только ноды данного источника (как сейчас для локальных селекторов — через фильтр по префиксу тега или эквивалент, согласованный с существующими примерами в доке).
-- **Локальный select (`selector`):** при включённом auto — `addOutbounds` или порядок `outbounds` в JSON должен включать тег auto **и** ноды; **`default`** = тег auto (в проекте часть опций в `options` — свериться с `GenerateSelectorWithFilteredAddOutbounds` и полями sing-box).
+- Бизнес-логика: `ui/wizard/business/` (или презентер) — идемпотентно, не трогать записи **без** маркеров в **`comment`**.
+- Маркеры и теги — **SPEC.md**, разделы **«Новые поля»**, **§1**, **§2**, **§3**.
 
-## 3. Поле `exclude_from_global` (рабочее имя)
+## 3. Два bool на `ProxySource`
 
-- **`ProxySource`:** `ExcludeFromGlobal bool` `json:"exclude_from_global,omitempty"` (или другое имя после ревью — едино в коде и ParserConfig.md).
-- **`GenerateOutboundsFromParserConfig` / `buildOutboundsInfo`:**
-  - при сборке `allNodes` помечать каждую ноду индексом источника (`ParsedNode.SourceIndex int`, `-1` = неизвестно);
-  - функция-обёртка `filterNodesForGlobalSelectors(allNodes, parserConfig) []*ParsedNode`, исключающая ноды, чей `SourceIndex` указывает на `proxies[j]` с `ExcludeFromGlobal == true`;
-  - в `buildOutboundsInfo` для **глобальных** селекторов вызывать `filterNodesForSelector` на **отфильтрованном** списке; для локальных — без изменений (`nodesBySource[i]`).
-- **WireGuard / endpoints:** уточнить в реализации: исключение касается только outbounds-нод или также endpoint-тегов в глобальных селекторах (если endpoint участвует в тех же фильтрах — скорее да, единая семантика «источник исключён из глобальных списков»).
+Поведение полей — **SPEC.md**, раздел **«Новые поля `ProxySource`»** (таблица + синхронизация при снятии групп).
+
+- **Код:** `core/config/configtypes/types.go` (+ алиас в `core/config` при необходимости).
+- **`exclude_from_global`:** при **`true`** — ноды источника **не** участвуют в пуле кандидатов при генерации **каждого** элемента **`ParserConfig.outbounds`** (весь массив; тип записи **не** ограничивать — **та же ширина охвата**, что у **`expose_group_tags_to_global`**). **JSON** глобальных outbounds **не** редактировать из‑за этого флага.
+- **`expose_group_tags_to_global`:** при **`true`** — на этапе **сборки** глобального outbound к **эффективному** списку подмешивать теги локальных групп источников с флагом (**SPEC §1–§2**; обход всего **`ParserConfig.outbounds`**). Если у записи заданы **`filters`** — каждый expose-кандидат прогонять через ту же логику, что ноды (**SPEC §5**, синтетика **`tag`/`comment`**, пустые **`host`** и др.); строки из JSON **`addOutbounds`** по-прежнему **без** **`filters`**. Сохранённый ParserConfig **не** меняется; дедуп/порядок — **IMPLEMENTATION_REPORT**. При **`false`** — не подмешивать теги этого источника.
+- **Парсер:** `ParsedNode.SourceIndex`; для **всех** глобальных **`ParserConfig.outbounds`** — фильтрация пула / исключение нод при `ExcludeFromGlobal` (**`outbound_generator.go`**, `filterNodesForGlobalSelectors` и связанные пути — **PLAN §7**).
+- **WireGuard:** исключение по `exclude_from_global` и для нод, уходящих в **`endpoints`**.
 
 ## 4. Миграция и версия
 
-- Если только новые optional поля без смены семантики старых — **версия 4** достаточна.
-- Если меняется контракт версии — обновить `ParserConfigVersion`, `migrator.go`, фрагменты в **ParserConfig.md**.
+- По возможности **версия 4** + optional поля; иначе — `ParserConfigVersion`, `migrator.go`, **ParserConfig.md**.
 
 ## 5. Локализация
 
-- `internal/locale/en.json`, `ru.json`: кнопка Edit, названия подвкладок, подписи чекбоксов, предупреждение про отсутствие локальных групп при exclude.
+- **`internal/locale/en.json`**, **`ru.json`:** Edit, подвкладки, все чекбоксы из SPEC; tooltip для **«Теги в глобальных группах»** (нужна хотя бы одна локальная группа); текст предупреждения при **exclude** без пары auto+select.
 
-## 6. Документация и приёмка
+---
 
-| Артефакт | Действие |
-|----------|----------|
-| `docs/ParserConfig.md` | Поле `exclude_from_global`, сценарий с локальными auto/select, пример JSON. |
-| `docs/release_notes/upcoming.md` | После реализации — кратко EN/RU. |
-| `SPECS/026-.../IMPLEMENTATION_REPORT.md` | Заполнить по факту. |
-| Папка задачи | По workflow README переименовать в `026-F-C-…` после завершения. |
+## 6. Документация (обязательно при реализации)
 
-## 7. Ориентир по файлам
+| Документ | Что сделать |
+|----------|-------------|
+| **`docs/ParserConfig.md`** | Подраздел **`proxies[]` / ProxySource**: оба bool, генерация, без мутации **`outbounds[].addOutbounds`**. Кратко **SPEC §5**: expose-кандидаты и **`outbounds[].filters`**; **`addOutbounds`** из JSON не фильтруются. Маркеры **WIZARD:** — SPEC §2. |
+| **`docs/release_notes/upcoming.md`** | После мержа фичи — EN/RU, кратко. |
+| **`SPECS/026-.../IMPLEMENTATION_REPORT.md`** | Заполнить; переименовать папку в **`026-F-C-…`**. |
+
+Других файлов документации не трогать без необходимости; **`bin/wizard_template.json`** — только если появится требование в SPEC/отчёте.
+
+## 7. Ориентир по файлам кода
 
 | Зона | Файлы |
 |------|--------|
 | Модель | `core/config/configtypes/types.go`, при необходимости `ParsedNode` |
-| Генератор | `core/config/outbound_generator.go`, возможно `outbound_filter.go` |
-| Загрузка нод | место, где формируется `[]*ParsedNode` из `ProxySource` — проставить `SourceIndex` |
+| Генератор | `core/config/outbound_generator.go`, при необходимости `outbound_filter.go` |
+| Загрузка нод | проставить **`SourceIndex`** |
 | Мигратор | `core/config/parser/migrator.go` |
-| UI | `ui/wizard/tabs/source_tab.go`, `ui/wizard/business/*`, `ui/wizard/presentation/*` при необходимости |
-| Тесты | `outbound_generator` / интеграционные сценарии exclude + локальные селекторы |
-| Документация | `docs/ParserConfig.md` |
+| UI | `ui/wizard/tabs/source_tab.go`, `ui/wizard/business/*`, презентер при необходимости |
+| Тесты | генератор, exclude + expose; expose + **`filters`** (в т.ч. отсев по **`host`**, проход по **`comment`** / **WIZARD:**) |
 
 ## 8. Риски
 
-- Дублирование тегов при смене `tag_prefix` после создания локальных outbounds — при смене префикса обновлять теги управляемых записей или документировать ручную правку.
-- Пустые глобальные селекторы, если все источники исключены и нет addOutbounds на локальные теги — ожидаемо; UI-предупреждение снижает сюрприз.
+- Смена **`tag_prefix`** после создания локальных outbounds — синхронизация тегов в маркированных записях (**SPEC §1**).
+- **`expose`:** эффективные списки длиннее JSON; дубликаты с **`addOutbounds`** — дедуп/порядок в отчёте. Пустые **`host`** у синтетики — expose не проходит AND с **`host`** (**SPEC §5**).
+- Пустые глобальные outbound-списки при exclude без **`expose`** и без явных ссылок в JSON — UI-предупреждение.
