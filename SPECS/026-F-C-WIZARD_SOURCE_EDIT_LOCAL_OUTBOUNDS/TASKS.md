@@ -11,7 +11,7 @@
 ## Этап 2: UI — Edit
 
 - [x] **View → Edit**, локали.
-- [x] Табы **Настройки** / **Просмотр**.
+- [x] Табы **Настройки** / **Просмотр** (локальные outbounds + ноды) / **JSON** (read-only `proxies[i]`); live-обновление Preview/JSON при смене настроек на активной вкладке.
 - [x] Настройки по **SPEC** (таблица UI): префикс, auto, select, два bool, предупреждение exclude; **`expose`** всегда виден, без локальных групп — **Disabled** + tooltip; **`expose`/`exclude`** только в **`proxies[]`**, без мутации **`ParserConfig.outbounds`** в JSON (**PLAN §3**).
 - [x] Префикс только в Edit; в списке — отображение.
 - [x] Предупреждение exclude без пары auto+select — ключи локалей.
