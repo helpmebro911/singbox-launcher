@@ -1,6 +1,6 @@
 # SPEC: расширенный редактор источника (первая вкладка визарда) и исключение нод из глобальных outbounds
 
-**Статус:** N (новая). **Тип:** F (feature).
+**Статус:** C (закрыта). **Тип:** F (feature).
 
 ---
 
@@ -58,14 +58,14 @@
 
 ## Критерии приёмки
 
-- [ ] Edit, обе подвкладки; префикс; чекбоксы auto, select, **`exclude_from_global`**, **`expose_group_tags_to_global`** (**disabled** + tooltip без локальных групп).
-- [ ] При **`expose_group_tags_to_global`** теги локальных групп — кандидаты в **эффективный** список **каждого** глобального outbound; при непустых **`outbounds[].filters`** — только если проходят ту же логику, что ноды (**§5**); **`addOutbounds`** из JSON по-прежнему **без** фильтра; **сериализованный** `addOutbounds` от галочки **не** меняется.
-- [ ] Локальный select с локальным auto — `default` на auto, список outbounds селектора по SPEC/PLAN.
-- [ ] **`exclude_from_global`** исключает ноды источника из пула для **каждого** **`ParserConfig.outbounds`**; локальные outbounds источника не ломаются.
-- [ ] Предупреждение при exclude без пары auto+select.
-- [ ] Старые конфиги без новых полей работают как раньше.
-- [ ] **`docs/ParserConfig.md`** обновлён по **PLAN.md**.
-- [ ] `go vet ./...`, `go build ./...`, `go test ./...` (GUI — **CONSTITUTION**).
+- [x] Edit, обе подвкладки; префикс; чекбоксы auto, select, **`exclude_from_global`**, **`expose_group_tags_to_global`** (**disabled** + tooltip без локальных групп).
+- [x] При **`expose_group_tags_to_global`** теги локальных групп — кандидаты в **эффективный** список **каждого** глобального outbound; при непустых **`outbounds[].filters`** — только если проходят ту же логику, что ноды (**§5**); **`addOutbounds`** из JSON по-прежнему **без** фильтра; **сериализованный** `addOutbounds` от галочки **не** меняется.
+- [x] Локальный select с локальным auto — `default` на auto, список outbounds селектора по SPEC/PLAN.
+- [x] **`exclude_from_global`** исключает ноды источника из пула для **каждого** **`ParserConfig.outbounds`**; локальные outbounds источника не ломаются.
+- [x] Предупреждение при exclude без пары auto+select.
+- [x] Старые конфиги без новых полей работают как раньше.
+- [x] **`docs/ParserConfig.md`** обновлён по **PLAN.md**.
+- [ ] Полный **`go vet ./...`**, **`go build ./...`**, **`go test ./...`** на среде с GUI/CGO (**CONSTITUTION**); локально: **`go test ./core/config/...`**, **`go vet ./core/config/...`**, **`go test ./ui/wizard/business/...`**.
 
 ---
 

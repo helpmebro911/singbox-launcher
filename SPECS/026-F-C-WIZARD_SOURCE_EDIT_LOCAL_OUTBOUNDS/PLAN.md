@@ -38,7 +38,7 @@
 |----------|-------------|
 | **`docs/ParserConfig.md`** | Подраздел **`proxies[]` / ProxySource**: оба bool, генерация, без мутации **`outbounds[].addOutbounds`**. Кратко **SPEC §5**: expose-кандидаты и **`outbounds[].filters`**; **`addOutbounds`** из JSON не фильтруются. Маркеры **WIZARD:** — SPEC §2. |
 | **`docs/release_notes/upcoming.md`** | После мержа фичи — EN/RU, кратко. |
-| **`SPECS/026-.../IMPLEMENTATION_REPORT.md`** | Заполнить; переименовать папку в **`026-F-C-…`**. |
+| **`SPECS/026-F-C-…/IMPLEMENTATION_REPORT.md`** | Заполнено. |
 
 Других файлов документации не трогать без необходимости; **`bin/wizard_template.json`** — только если появится требование в SPEC/отчёте.
 
