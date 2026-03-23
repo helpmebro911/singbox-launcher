@@ -1,44 +1,54 @@
-# План: Rules Library (027)
+# План: Rules — custom + библиотека (027)
 
-## 1. Архитектура
+## 1. Модель
 
-1. **Каталог** — только чтение из `WizardModel.TemplateData.SelectableRules` (текущая модель пресета: label, description, rule, rule_sets, default outbound, is_default и т.д.).
-2. **Точка входа (выбрать один вариант до реализации):**
-   - **P1** — кнопка **Add from library** на вкладке **Rules** (рядом с **Add rule**): меньше табов, контекст очевиден.
-   - **P2** — отдельная вкладка **Library** в ряду Sources / … / Rules: открывает тот же диалог или встроенный список.
-3. **Диалог** — Fyne modal: прокручиваемый список строк `Check` + label; tooltip с description; внизу **Cancel** / **Add selected**. После **Add** — показ информационного сообщения или статусной строки с числом добавленных и пропущенных (R4 SPEC).
-4. **Клонирование** — `CloneSelectablePresetToCustomRule(preset, userStateFromSelectable?) -> *RuleState`:
-   - глубокое копирование JSON: `rule`, `rules`, `rule_sets` (и всё, что использует `MergeRouteSection` / превью);
-   - выставить **`library_source_label`** = `preset.Label` (trimmed);
-   - **Type** в PersistedCustomRule: **`DetermineRuleType`** от клона (или `raw`, если объект не укладывается — не вводить отдельный тип `library` в контракте 018);
-   - **enabled** / **selected_outbound**: при добавлении из UI — из пресета (`IsDefault`, `DefaultOutbound`) или как сейчас у нового custom; при **миграции A** — из `PersistedSelectableRuleState`.
-5. **Дубликаты** — перед вставкой: множество «занятых» ключей = все `library_source_label` в custom + для записей без поля — `trimmed Rule.Label`, совпадающий с каким-либо label пресета в шаблоне (чтобы не задвоить после миграции). Превентивно в UI: disabled checkbox + tooltip **Already in rules** для занятых пресетов.
-6. **Merge** — после миграции A: `MergeRouteSection` обходит **только** `customRules`; аргумент `states` пустой или внутри функции игнорируется; вызовы (`buildRouteSection`, тесты) обновить. Удалить мёртвый код путей selectable только если нет варианта B.
-7. **Миграция A (рекомендация плана):** один флаг в state или bump `version` + при первой загрузке: построить мигрированные custom, порядок: **сначала** пресеты в порядке **шаблона** с переносом enabled/outbound из `selectable_rule_states`, **затем** прежние `custom_rules` как были. Очистить `selectable_rule_states` в памяти и при следующем сохранении в JSON. Идемпотентность: повторная загрузка не дублирует блок.
+- **`custom_rules`** — единственный список для UI Rules и для **route** (после миграции).
+- **`selectable_rules` в шаблоне** — библиотека пресетов + источник для **первого засева** (поле **`"default": true`** в JSON, только если ещё нет сохранённого state визарда).
+- Связь «какая строка из какого пресета» **не** храним: библиотека не синхронизируется с уже сохранёнными правилами.
 
-## 2. Файлы (ориентир)
+## 2. Первый засев
+
+Условие: нет загруженного state визарда для этого сценария (новый профиль / первое создание — уточнить в коде точку, где state ещё «пустой»).
+
+Действие: заполнить `custom_rules` копиями пресетов из `selectable_rules` с **`default` == true**, по порядку в массиве шаблона. Enabled и outbound — как при создании нового custom из пресета сегодня (поля пресета + принятые дефолты).
+
+## 3. Миграция со старого формата
+
+Условие: state ещё не помечен как мигрированный и есть старый слой `selectable_rule_states` (и прочие признаки старого формата — зафиксировать в коде одним условием).
+
+Действие:
+
+1. Для каждого пресета текущего шаблона — одна запись в начале объединённого списка: тело из шаблона, **enabled** / **selected_outbound** из `selectable_rule_states`.
+2. Затем append существующие `custom_rules` в прежнем порядке.
+3. Записать флаг или bump версии state; очистить `selectable_rule_states` при сохранении.
+4. Идемпотентность: повторная загрузка не дублирует блок.
+
+## 4. Библиотека (ручное добавление)
+
+- Кнопка **Add from library** на вкладке Rules.
+- Модалка: скролл, чекбоксы по пресетам из `TemplateData.SelectableRules`, **Add selected** — только добавление копий в **конец** `custom_rules`, без проверок на дубликаты.
+- Локали в **internal/locale/en.json**.
+
+## 5. Merge и UI
+
+- **`MergeRouteSection`:** один проход по `custom_rules`; аргумент selectable-состояний не использовать (или игнорировать после миграции).
+- Убрать с вкладки Rules отдельный блок selectable после миграции.
+- Согласовать загрузку/сохранение state: selectable не восстанавливать как маршрутный слой.
+
+## 6. Файлы
 
 | Зона | Файлы |
 |------|--------|
-| UI | `ui/wizard/tabs/rules_tab.go`, опционально `ui/wizard/dialogs/library_rules_dialog.go`, `wizard.go` |
-| Клон / дубликаты | `ui/wizard/business/` или `ui/wizard/models/` |
-| State / миграция | `ui/wizard/models/wizard_state_file.go`, `presenter_state.go` |
-| Конфиг | `ui/wizard/business/create_config.go` |
+| UI | `ui/wizard/tabs/rules_tab.go`, при необходимости `ui/wizard/dialogs/…`, `wizard.go` |
+| Клон | `ui/wizard/business/` или `ui/wizard/models/` |
+| State / миграция / первый засев | `wizard_state_file.go`, `presenter_state.go` |
+| Конфиг | `create_config.go` |
 | Локаль | `internal/locale/en.json` |
-| Документация | `docs/WIZARD_STATE.md`, `SPECS/002-F-C-WIZARD_STATE/WIZARD_STATE_JSON_SCHEMA.md` при изменении схемы, `docs/ARCHITECTURE.md` |
+| Доки | `docs/WIZARD_STATE.md`, при смене схемы — схема в **002**, `docs/ARCHITECTURE.md` |
 
-## 3. Решения до кодинга (чеклист)
+## 7. Тесты
 
-- [ ] **P1** vs **P2** (точка входа).
-- [ ] Подтвердить **A** и порядок: мигрированный блок **перед** или **после** существующих custom (SPEC рекомендует явно зафиксировать; по умолчанию плана: **шаблонный блок первым**, затем старые custom).
-- [ ] Вариант **B** — только если нужен мягкий rollout; тогда описать антидублирование в merge.
-
-## 4. Зависимости
-
-- Подсистема типов и **DetermineRuleType** — **018**.
-- Шаблон: при желании позже добавить в `wizard_template.json` стабильный **`preset_id`** (не обязателен при семантике «только label»).
-
-## 5. Тесты
-
-- Юнит-тесты: клон пресета (в т.ч. с `rule_sets`), детектор дубликатов, идемпотентность миграции (псевдо-state в памяти).
-- Интеграция: `MergeRouteSection` только custom после флага миграции.
+- Клон пресета (в т.ч. с `rule_sets`).
+- Первый засев: только `default: true`, порядок.
+- Миграция: идемпотентность, порядок блоков.
+- `MergeRouteSection` только custom после миграции.

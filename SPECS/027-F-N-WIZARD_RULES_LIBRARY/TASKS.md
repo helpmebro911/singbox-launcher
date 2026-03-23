@@ -1,33 +1,26 @@
-# Задачи: Rules Library (027)
+# Задачи: Rules — custom + библиотека (027)
 
-## Этап 0: Решения
+## Этап 1: State, засев, миграция
 
-- [ ] Точка входа: **P1** (кнопка на Rules) или **P2** (вкладка Library).
-- [ ] Миграция: **A** (рекомендуется) с фиксацией порядка: блок из шаблона **перед** существующими custom / иной порядок — записать в IMPLEMENTATION_REPORT.
-- [ ] Политика дубликатов: skip + сообщение с числами (SPEC R4); чекбоксы «уже в списке» disabled + tooltip.
+- [ ] Признак/версия «миграция library выполнена»; условие срабатывания миграции со старого формата.
+- [ ] Миграция: блок из шаблона по порядку + старые `custom_rules`; перенос enabled/outbound из `selectable_rule_states`; очистка selectable при сохранении; идемпотентность.
+- [ ] Первый засев без сохранённого state: в `custom_rules` только пресеты с **`"default": true`** в `selectable_rules`, порядок как в шаблоне.
+- [ ] При необходимости — версия **WizardState** и правки в `wizard_state_file.go`.
 
-## Этап 1: Модель, клон, state
+## Этап 2: Клон и merge
 
-- [ ] `PersistedCustomRule` + `RuleState`: поле **`library_source_label`** (optional JSON), заполнять при добавлении из каталога и при миграции A.
-- [ ] Функция глубокого клонирования пресета → custom `RuleState` (включая rule_sets, множественные rules при наличии).
-- [ ] Миграция A: флаг/версия state, идемпотентность, перенос enabled/outbound из `selectable_rule_states`, очистка selectable при сохранении.
-- [ ] При необходимости — обновить **WizardState** version и миграции в `wizard_state_file.go`.
+- [ ] Функция глубокого копирования пресета → запись `custom_rules` (rule / rules / rule_sets, тип через **DetermineRuleType**, 018).
+- [ ] `MergeRouteSection` и вызовы: после миграции только `custom_rules`.
+- [ ] Убрать отдельный UI-блок selectable после миграции; согласовать restore/save selectable.
 
-## Этап 2: UI каталога
+## Этап 3: UI
 
-- [ ] Модальный диалог: список пресетов, чекбоксы, Cancel / Add selected, tooltips description.
-- [ ] Пометка уже добавленных пресетов (disabled + tooltip).
-- [ ] После Add — итоговое уведомление *Added / skipped* (locale EN).
-- [ ] **Empty state** на вкладке Rules при отсутствии custom (SPEC R8).
-
-## Этап 3: Rules tab и merge
-
-- [ ] Убрать блок selectable из UI после миграции (или спрятать за флагом, если B).
-- [ ] `MergeRouteSection`: один проход по `custom_rules`; обновить все вызовы и тесты.
-- [ ] `restoreSelectableRuleStates` / сохранение: согласовать с «selectable только каталог» (не восстанавливать в модель как маршрутные, если A).
+- [ ] Кнопка **Add from library**; модалка: скролл, чекбоксы, Cancel / **Add selected**; описание в tooltip/подстрочнике.
+- [ ] **Empty state** при пустом `custom_rules` (SPEC R8).
+- [ ] Строки locale (EN).
 
 ## Этап 4: Закрытие
 
-- [ ] Ручная проверка: SRS-пресеты, preview, старый state.json.
+- [ ] Ручная проверка: SRS-пресеты, preview, старый state, новый профиль без state.
 - [ ] `go build ./...`, `go test ./...`, `go vet ./...`.
-- [ ] docs + release_notes + IMPLEMENTATION_REPORT.
+- [ ] docs, `docs/release_notes/upcoming.md`, **IMPLEMENTATION_REPORT.md**.
