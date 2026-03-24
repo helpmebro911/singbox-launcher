@@ -76,7 +76,7 @@
 
 ### Общий контекст
 
-Файл `bin/wizard_states/state.json` (и именованные снимки в той же папке) сериализует `WizardStateFile` (`ui/wizard/models/wizard_state_file.go`): `version`, `parser_config`, `config_params`, **`dns_options`**, `selectable_rule_states`, `custom_rules`, метаданные. Секция DNS должна восстанавливаться при открытии визарда и при **Save current state** / **Save state as** так же, как правила и `route.final`.
+Файл `bin/wizard_states/state.json` (и именованные снимки в той же папке) сериализует `WizardStateFile` (`ui/wizard/models/wizard_state_file.go`): `version`, `parser_config`, `config_params`, **`dns_options`**, **`custom_rules`**, опционально **`rules_library_merged`**; устаревший ключ **`selectable_rule_states`** может присутствовать только до миграции library (см. **docs/WIZARD_STATE.md**). Секция DNS должна восстанавливаться при открытии визарда и при **Save current state** / **Save state as** так же, как правила и `route.final`.
 
 ### Как сохранить DNS в `state.json` (предлагаемая схема)
 
@@ -109,7 +109,7 @@
 
 ```json
 {
-  "version": 2,
+  "version": 3,
   "created_at": "2025-03-21T12:00:00Z",
   "updated_at": "2025-03-21T12:00:00Z",
   "parser_config": { ... },
@@ -130,7 +130,7 @@
     "independent_cache": false,
     "default_domain_resolver": "direct_dns_resolver"
   },
-  "selectable_rule_states": [ ... ],
+  "rules_library_merged": true,
   "custom_rules": [ ... ]
 }
 ```

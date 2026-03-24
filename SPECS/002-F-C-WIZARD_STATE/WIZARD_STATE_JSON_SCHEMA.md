@@ -1,15 +1,19 @@
 # Схема файла state.json
 
+> **Актуальный поток (версия 3, rules library):** описание загрузки, миграций v2→v3 и поля **`rules_library_merged`** — в **`docs/WIZARD_STATE.md`**. Этот файл — справочник по полям и историческим форматам; при расхождении приоритет у **`docs/WIZARD_STATE.md`** и кода **`WizardStateFile`**.
 
 ## Общая структура
 
+Пример **нового** сохранения (версия **3**, без отдельного слоя selectable в state):
+
 ```json
 {
-  "version": 2,
+  "version": 3,
+  "rules_library_merged": true,
   "comment": "Описание состояния (опционально)",
   "created_at": "2026-01-30T12:00:00Z",
   "updated_at": "2026-01-30T12:00:00Z",
-  
+
   "parser_config": {
     "version": 4,
     "proxies": [...],
@@ -26,9 +30,11 @@
       "value": "generated-secret-token"
     }
   ],
-  "selectable_rule_states": [...],
   "custom_rules": [...]
 }
+```
+
+У **старых** файлов (до миграции library) может быть **`version": 2`**, **`selectable_rule_states`** и отсутствие **`rules_library_merged`** — при **`LoadState`** выполняется **`ApplyRulesLibraryMigration`** (см. **`docs/WIZARD_STATE.md`**).
 
 ---
 
@@ -38,8 +44,8 @@
 
 #### `version` (int, обязательное)
 - **Тип:** `integer`
-- **Значение:** `2` (текущая версия)
-- **Описание:** Версия формата файла состояния. Используется для миграций. При загрузке старого формата (version=1) автоматически мигрируется в новый формат.
+- **Значение при сохранении:** **`3`** (текущая). Чтение поддерживает **`2`** и **`3`** (см. **`state_store`**, **`docs/WIZARD_STATE.md`**).
+- **Описание:** Версия формата файла состояния. Миграции: v1→v2 (поля правил), v2→v3 (объединение **`selectable_rule_states`** в **`custom_rules`**, флаг **`rules_library_merged`**).
 
 #### `id` (string, опциональное)
 - **Тип:** `string`
@@ -152,11 +158,15 @@
 
 ---
 
-### 5. Состояния правил из шаблона
+### 5. Правила маршрута и legacy-selectable
 
-#### `selectable_rule_states` (array, обязательное)
+#### `rules_library_merged` (bool, опционально в старых файлах)
+- **Тип:** `boolean`
+- **Описание:** После **027** при **`true`** визард хранит правила маршрута **только** в **`custom_rules`** (без слоя **`selectable_rule_states`** в файле); при сборке **`config.json`** к скелету **`route`** из шаблона добавляются включённые записи из **`custom_rules`**. Подробности — **`docs/WIZARD_STATE.md`**, **`ApplyRulesLibraryMigration`**.
+
+#### `selectable_rule_states` (array, только у старых снимков до миграции)
 - **Тип:** `array` of `PersistedSelectableRuleState`
-- **Описание:** Упрощённые состояния правил маршрутизации из шаблона. Хранят **только выбор пользователя** — определение правила (rule, description, rule_set, platforms и т.д.) берётся из шаблона при загрузке.
+- **Описание (исторически v2):** Упрощённые состояния для пресетов шаблона. В формате **3** после миграции ключ отсутствует или пуст — данные перенесены в **`custom_rules`**. Не путать с **`selectable_rules`** в **`wizard_template.json`** (библиотека пресетов в UI).
 
 **Структура элемента `PersistedSelectableRuleState`:**
 ```json
@@ -193,21 +203,17 @@
 ]
 ```
 
-**Важно:**
-- Определение правила (rule, description, rule_set, platforms) **не дублируется** в state.json — берётся из шаблона
-- При загрузке состояния selectable_rule_states маппятся на правила шаблона по `label`
-- Если в шаблоне появилось новое правило, которого нет в state.json — оно инициализируется с default-значениями из шаблона
-- Если в state.json есть правило, которого больше нет в шаблоне — оно игнорируется
-- **Тип правила** (System/IP/Domain/Process и т.д.) определяется из шаблона, не хранится в state.json
-- В режиме "Настроить заново" правила инициализируются из шаблона с `enabled=default`, `selected_outbound` из правила
+**Важно (для файлов, где слой ещё не смержен):**
+- Определение правила (rule, description, rule_set, platforms) **не дублируется** в **`selectable_rule_states`** — тело пресета из шаблона.
+- При **`ApplyRulesLibraryMigration`** записи переносятся в **`custom_rules`** как полные **`PersistedCustomRule`**.
 
 ---
 
-### 6. Пользовательские правила
+### 6. Пользовательские правила (единый список маршрута после 027)
 
 #### `custom_rules` (array, обязательное)
 - **Тип:** `array` of `PersistedCustomRule`
-- **Описание:** Пользовательские правила маршрутизации, созданные пользователем вручную (не из шаблона). Хранят полную структуру, т.к. не привязаны к шаблону.
+- **Описание:** Все правила маршрута, которыми управляет визард: засев с **`default: true`**, копии из библиотеки пресетов, правила «Add Rule», результат миграции из **`selectable_rule_states`**. Порядок в массиве = порядок в **`MergeRouteSection`** (после базового `route` шаблона).
 
 **Структура элемента `PersistedCustomRule`:**
 ```json
@@ -442,11 +448,9 @@
   - `ParserConfig` (string) — текст блока parser_config из шаблона. **Используется как fallback** при первой инициализации
   - `Config` (map[string]json.RawMessage) — секции конфига из шаблона (после применения params). **Всегда используются из шаблона** для генерации конфига
   - `ConfigOrder` ([]string) — порядок секций. **Всегда используется из шаблона**
-  - `SelectableRules` ([]TemplateSelectableRule) — правила из шаблона (с label, description, rule, rule_set, platforms). **В режиме редактирования** маппятся с состояниями из state.json по label, **в режиме "Настроить заново"** используются для инициализации
+  - `SelectableRules` ([]TemplateSelectableRule) — пресеты секции **`selectable_rules`** в шаблоне (библиотека **Add from library**, первый засев **`default: true`**). После **027** они **не** восстанавливают отдельный маршрутный слой в модели — источник правды для списка на вкладке Rules — **`custom_rules`** в state (**`docs/WIZARD_STATE.md`**).
   - `DefaultFinal` (string) — outbound по умолчанию из config.route.final. **Используется как fallback**, если не задан в `config_params`
-- **Восстановление:** 
-  - В режиме редактирования: шаблон загружается, правила маппятся по label с selectable_rule_states из state.json
-  - В режиме "Настроить заново": шаблон используется полностью для инициализации нового состояния
+- **Восстановление:** шаблон всегда читается с диска; маршрут визарда при **`LoadState`** — из **`custom_rules`** после **`ApplyRulesLibraryMigration`** (если нужно). Режим **New** / «настроить заново» — **`InitializeTemplateState`** засевает **`custom_rules`** из пресетов с **`default: true`**, без **`selectable_rule_states`**.
 
 ### GeneratedOutbounds (не сохраняется)
 - **Причина:** Генерируются из `parser_config_json` при парсинге
@@ -472,13 +476,11 @@
 3. **Извлечь SourceURLs** из `parser_config.proxies` (поля `source` и `connections`) для отображения в UI
 
 4. **Восстановить параметры конфигурации** из `config_params` (например, `route.final`, `experimental.clash_api.secret`)
-5. **Восстановить состояния правил:**
-   - Для `selectable_rule_states`: маппинг по `label` с правилами из шаблона. Применяются `enabled` и `selected_outbound` из state.json
-   - Для `custom_rules`: загрузить полностью из файла (включая `rule`)
+5. **Восстановить правила маршрута:** **`LoadState`** — миграции JSON, **`ApplyRulesLibraryMigration`**, затем **`custom_rules`** в модель (см. **docs/WIZARD_STATE.md**); пресеты шаблона не подмешиваются вторым списком после миграции.
 6. **Запустить парсинг** для генерации `GeneratedOutbounds`
 7. **Синхронизировать GUI** с восстановленной моделью
 
-**Важно:** В режиме редактирования selectable rules определяются шаблоном, а пользовательские выборы (enabled, selected_outbound) берутся из state.json. Custom rules загружаются полностью из state.json.
+**Важно:** Актуальный маршрут визарда — массив **`custom_rules`**; старый слой **`selectable_rule_states`** при первой загрузке сливается в него.
 
 ### Режим "Настроить заново"
 
@@ -487,7 +489,7 @@
 1. **Игнорировать `state.json`** — не загружать сохраненное состояние
 2. **Загрузить шаблон** из файла `config_template.json`
 3. **Инициализировать новое состояние** на основе шаблона:
-   - Извлечь правила из шаблона (`selectable_rules`) в `selectable_rule_states` с дефолтными настройками из шаблона (`enabled = default из шаблона`)
+   - **`InitializeTemplateState`**: заполнить **`custom_rules`** клонами пресетов с **`default: true`**, выставить **`RulesLibraryMerged`** (без **`selectable_rule_states`**)
    - Инициализировать `config_params`:
      - `route.final`: значение из `TemplateData.DefaultFinal` (если есть в шаблоне), иначе пустая строка `""`
      - `experimental.clash_api.secret`: **не инициализируется** — будет сгенерирован автоматически при первом сохранении конфига
@@ -501,14 +503,14 @@
 
 ## Валидация при загрузке
 
-- `version` должен быть `1` или `2` (v1 мигрируется автоматически)
+- `version` при записи — **`3`**; допустимо чтение **`2`** и **`3`** (v1→v2 и v2→v3 мигрируются при загрузке)
 - `id` должен быть валидным (только разрешённые символы, макс. 50 символов)
 - `parser_config` должен быть валидным JSON объектом с полями `version`, `proxies`, `outbounds`, `parser`
 
 - `config_params` должен быть массивом
 - Каждый элемент `config_params` должен иметь поля `name` и `value` (оба строки)
-- `selectable_rule_states` должен быть массивом
-- Каждый элемент `selectable_rule_states` должен иметь поля `label`, `enabled`, `selected_outbound`
+- У актуального файла **`custom_rules`** — массив; **`selectable_rule_states`** отсутствует или пуст после миграции
+- Если присутствует **`selectable_rule_states`** (старый формат), каждый элемент должен иметь поля `label`, `enabled`, `selected_outbound`
 - `custom_rules` должен быть массивом
 - Каждый элемент `custom_rules` должен иметь поля `label`, `enabled`, `selected_outbound`, `rule`
 
