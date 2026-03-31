@@ -63,5 +63,6 @@
 - **027** — завершена (F-C): WIZARD_RULES_LIBRARY (единый **`custom_rules`**, библиотека пресетов **Add from library**, миграция v2→v3; **`selectable_rules`** в шаблоне — пресеты; см. **SPECS/027-F-C-WIZARD_RULES_LIBRARY/SPEC.md**, **docs/WIZARD_STATE.md**)
 - **028** — завершена (F-C): WIZARD_LIST_ROW_HOVER (подсветка строк списка при наведении: **Rules**, **Sources**, **Outbounds** (конфигуратор), **DNS**, модал библиотеки; **HoverRow** + **WireTooltipLabelHover** + **HoverForward*** / **HoverForwardTTButton** для SRS; **SPECS/028-F-C-WIZARD_LIST_ROW_HOVER/SPEC.md**)
 - **029** — исследование (Q-С): SUBSCRIPTION_PARSER_CLASH_CONVERTOR_PARITY (доработки парсера подписок под **sing-box**, реализованы; папка исторически от сравнения с [clash-convertor](https://github.com/DikozImpact/clash-convertor); **SPECS/029-Q-С-SUBSCRIPTION_PARSER_CLASH_CONVERTOR_PARITY/SPEC.md**)
+- **030** — баг в плане (B-N): WINDOWS_FOREGROUND_FOCUS_LOSS (Windows: периодический слёт фокуса ввода в других приложениях при работающем лаунчере; поиск причины и корреляция с UI/треем; **SPECS/030-B-N-WINDOWS_FOREGROUND_FOCUS_LOSS/SPEC.md**)
 
 Подробное описание каждой задачи — в SPEC.md соответствующей папки.
