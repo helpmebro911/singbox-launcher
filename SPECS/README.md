@@ -64,5 +64,6 @@
 - **028** — завершена (F-C): WIZARD_LIST_ROW_HOVER (подсветка строк списка при наведении: **Rules**, **Sources**, **Outbounds** (конфигуратор), **DNS**, модал библиотеки; **HoverRow** + **WireTooltipLabelHover** + **HoverForward*** / **HoverForwardTTButton** для SRS; **SPECS/028-F-C-WIZARD_LIST_ROW_HOVER/SPEC.md**)
 - **029** — исследование (Q-С): SUBSCRIPTION_PARSER_CLASH_CONVERTOR_PARITY (доработки парсера подписок под **sing-box**, реализованы; папка исторически от сравнения с [clash-convertor](https://github.com/DikozImpact/clash-convertor); **SPECS/029-Q-С-SUBSCRIPTION_PARSER_CLASH_CONVERTOR_PARITY/SPEC.md**)
 - **030** — баг в плане (B-N): WINDOWS_FOREGROUND_FOCUS_LOSS (Windows: периодический слёт фокуса ввода в других приложениях при работающем лаунчере; поиск причины и корреляция с UI/треем; **SPECS/030-B-N-WINDOWS_FOREGROUND_FOCUS_LOSS/SPEC.md**)
+- **031** — фича завершена (F-С): LINUX_SINGBOX_LOOKPATH (Linux: сначала `exec.LookPath("sing-box")`, иначе `<ExecDir>/bin/sing-box`; установка ядра из лаунчера — только в локальный `bin/`; **SPECS/031-F-С-LINUX_SINGBOX_LOOKPATH/SPEC.md**)
 
 Подробное описание каждой задачи — в SPEC.md соответствующей папки.
