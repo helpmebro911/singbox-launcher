@@ -51,7 +51,7 @@
    - Win7-режим предполагает запуск 32-битного `sing-box` и 32-битного Wintun как на Win7 x86, так и на Win7 x64.
 
 3. **Работа визарда на Win7**
-   - При запуске Win7-сборки лаунчера визард применяет секции шаблона с `"platforms": ["windows"]` и `"platforms": ["win7"]` (по аналогии с `darwin`/`darwin-tun`), как описано в `docs/release_notes/upcoming.md`.
+   - При запуске Win7-сборки лаунчера визард применяет секции шаблона с `"platforms": ["windows"]` и `"platforms": ["win7"]` (по аналогии с несколькими значениями `platforms` на других ОС), как описано в `docs/release_notes/upcoming.md`.
    - Функция `matchesPlatform` в `ui/wizard/template/loader.go` корректно обрабатывает Win7 (GOOS=windows, GOARCH=386) без влияния на другие платформы.
 
 4. **Документация**

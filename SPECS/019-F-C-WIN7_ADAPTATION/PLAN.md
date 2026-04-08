@@ -38,7 +38,7 @@
 - Минимальные сценарии:
   - Win64 (GOOS=windows, amd64) — только `windows`;
   - Win7 (GOOS=windows, 386) — `windows` + `win7`;
-  - macOS (darwin, enableTunForDarwin) — `darwin` + `darwin-tun`.
+  - macOS — `darwin` в `platforms` и условные `params` (`if` / `if_or`); без синтетической платформы.
 
 ### 4. CI/CD под Win7
 

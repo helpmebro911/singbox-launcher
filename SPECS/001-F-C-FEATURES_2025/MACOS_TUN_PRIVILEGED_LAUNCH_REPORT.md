@@ -99,11 +99,15 @@
 
 ### Визард и конфиг с TUN на darwin
 
-Конфиг собирается в визарде из шаблона **bin/wizard_template.json**. В шаблоне в **params** заданы платформозависимые подстановки:
-- **platforms: ["darwin"]** — подставляет в **inbounds** только mixed (прокси без TUN);
-- **platforms: ["darwin-tun"]**, **mode: "prepend"** — при включённой галочке TUN добавляет TUN inbound в начало списка.
+> **Актуально (после задачи 032, см. docs/WIZARD_STATE.md, SPECS/032-F-C-WIZARD_SETTINGS_TAB):** переключатель TUN для macOS на вкладке **«Настройки»**; в **state.json** — **`vars`** с **`name`: `tun`**. Устаревший **`config_params.enable_tun_macos`** при загрузке мигрирует в **`vars.tun`**. Сборка эффективного конфига: **GetEffectiveConfig** / **`ApplyTemplateWithVars`**; TUN inbound на macOS — **`params`** с **`"platforms": ["darwin"]`** и **`"if": ["tun"]`** (синтетическая платформа **`darwin-tun`** снята).
 
-При сборке конфига на darwin вызывается **GetEffectiveConfig(rawConfig, params, goos, model.EnableTunForMacOS)**. Параметр **enableTunForDarwin** задаётся галочкой **TUN** на вкладке Rules визарда; при **true** матчится платформа **darwin-tun**, и в конфиг попадает секция TUN. Значение галочки сохраняется в состоянии визарда как **enable_tun_macos** (config_params в state.json). Итог: при сохранении конфига из визарда с включённой галочкой TUN в **config.json** записываются оба inbound (tun и mixed); при следующем Start лаунчер по **ConfigHasTun** запросит пароль.
+Конфиг собирается в визарде из шаблона **bin/wizard_template.json**. В **params** заданы платформозависимые подстановки:
+- **platforms: ["darwin"]** — в **inbounds** попадает mixed (прокси без TUN);
+- **platforms: ["darwin"]**, **"if": ["tun"]** (и при необходимости **mode: "prepend"**) — TUN inbound в конфиг, когда **`tun`** истинна.
+
+Итог: при сохранённом профиле с включённым TUN на macOS в **config.json** оказываются оба inbound (tun и mixed); при следующем Start лаунчер по **ConfigHasTun** запросит пароль.
+
+*Исторически (до 032):* галочка TUN была на вкладке **Rules**, значение шло в **config_params** как **enable_tun_macos**; API **GetEffectiveConfig(..., enableTunForDarwin bool)** и поле **EnableTunForMacOS** в модели — сняты.
 
 ---
 
@@ -157,6 +161,6 @@
 - **core/config/config_loader.go** — **ConfigHasTun(configPath)** для выбора привилегированного старта на darwin.
 - **internal/platform/privileged_darwin.go** — кэш **g_privilegedAuthRef**, runWithPrivileges (две строки из pipe, без Free после использования), **freePrivilegedAuthorization**; Go: **FreePrivilegedAuthorization()**, **WaitForPrivilegedExit(pid)**.
 - **internal/platform/privileged_stub.go** — заглушки RunWithPrivileges (0, 0, err), WaitForPrivilegedExit, FreePrivilegedAuthorization.
-- **ui/wizard** (конфиг с TUN): **template/loader.go** — RawConfig/Params, **GetEffectiveConfig(raw, params, goos, enableTunForDarwin)**, **matchesPlatform** с учётом darwin-tun; **models/wizard_model.go** — поле **EnableTunForMacOS**; **tabs/rules_tab.go** — чекбокс TUN на darwin рядом с Final outbound; **presenter_state.go** — **enable_tun_macos** в config_params при сохранении/загрузке state; **business/create_config.go** — на darwin сборка секций через GetEffectiveConfig с model.EnableTunForMacOS. Шаблон **bin/wizard_template.json** содержит params с platforms **["darwin"]** (mixed) и **["darwin-tun"]** (prepend TUN).
+- **ui/wizard** (конфиг с TUN): **template/loader.go** — **GetEffectiveConfig**, **matchesPlatform** (в т.ч. **win7**), **`if` / `if_or`**; **SettingsVars**, **MaterializeClashSecretIfNeeded**; шаблон **bin/wizard_template.json**: **darwin** + **`if`** для TUN/mixed и **`if_or`** для **route.rules** (см. актуальный JSON).
 
 Сборка: `CGO_ENABLED=1 GOOS=darwin go build .` проходит успешно; возможны предупреждения линкера (например, дубликат `-lobjc`), на работу не влияют.

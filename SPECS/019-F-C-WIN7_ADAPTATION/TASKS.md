@@ -27,7 +27,7 @@
 - [ ] Проверить `matchesPlatform` в `ui/wizard/template/loader.go`:
   - Win64 (amd64) — поведение без изменений;
   - Win7 (386) — матч `windows` + `win7`;
-  - macOS darwin/darwin-tun — поведение без изменений.
+  - macOS — только `darwin` в `platforms` для params (TUN — через `if`); поведение без изменений для Win7-задачи.
 - [ ] Аудит `bin/wizard_template.json`:
   - убедиться, что секции `params` и `selectable_rules` с `platforms` для Win7 размечены корректно;
   - при необходимости добавить/скорректировать секции `"platforms": ["win7"]` и общие `"platforms": ["windows"]`.

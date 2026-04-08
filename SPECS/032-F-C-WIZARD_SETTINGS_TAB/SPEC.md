@@ -1,14 +1,16 @@
 # SPEC: WIZARD_SETTINGS_TAB — вкладка «Settings» в визарде
 
-**Статус:** N (новая). **Тип:** F (feature).
+**Статус:** C (complete). **Тип:** F (feature).
 
-**Объём:** только этот SPEC.md. PLAN.md / TASKS.md — после утверждения требований.
+**Объём:** **SPEC.md**, **PLAN.md** (в т.ч. **раздел 13 — решения**), **TASKS.md** (чеклист этапов), **IMPLEMENTATION_REPORT.md**.
+
+**Итог реализации:** папка **SPECS/032-F-C-WIZARD_SETTINGS_TAB/**; отчёт — **IMPLEMENTATION_REPORT.md**.
 
 ---
 
-## Проблема
+## Проблема (исходная формулировка)
 
-Часть полей итогового `config.json` задаётся только `wizard_template.json` и не редактируется во визарде: TUN `address` в нескольких `params`, `experimental.clash_api.external_controller`, `log.level`. Галочка TUN для macOS (`EnableTunForMacOS`, платформа `darwin-tun`) стоит на **Rules**, хотя по смыслу это системная настройка. Менять значения неудобно без правки шаблона или ручного редактирования конфига.
+До реализации часть полей итогового `config.json` задавалась только `wizard_template.json`; TUN для macOS включался галочкой на **Rules** (`EnableTunForMacOS` / `config_params.enable_tun_macos`), хотя по смыслу это системная настройка. Сейчас это закрыто вкладкой **Settings** и **`vars`** (см. **Цель** и **IMPLEMENTATION_REPORT.md**).
 
 ## Цель
 
@@ -16,13 +18,15 @@
 
 Состав и смысл переменных задаёт только **`wizard_template.json`**. В **`state.json`** массив **`state.vars`**: лишь переопределения пользователя (**`name`** + **`value`**), без отдельной схемы переменных. Сборка конфига по-прежнему через `config`, `params`, `GetEffectiveConfig` (macOS, TUN).
 
+**Качество поставки:** реализация сразу **полноценная** — аккуратный UI, миграции state, краевые случаи и документация по SPEC/PLAN; намеренно «урезать на потом» без причины не нужно.
+
 ---
 
 ### Шаблон: `vars` и плейсхолдеры `@…`
 
 Объявления — в корне шаблона, ключ **`vars`**. Строки **`@<имя>`** разрешены **только** в **`config`** и **`params`** (см. ниже); в остальных местах шаблона их не ждём.
 
-#### Объявление переменной (MVP)
+#### Объявление переменной
 
 - **`vars`** — массив объектов; один такой ключ на корень шаблона.
 - **`name`** — единый идентификатор: объявление, **`state.vars`**, плейсхолдер **`@<name>`**, массив **`if`** у **`params`**. Лексика **`name`** и то, как маркер ищется в JSON, — в подразделе **«Имя переменной и маркер `@<name>`»**. Регистр фиксирован; в шаблоне имена уникальны; в **state** — не больше одной записи на **`name`**.
@@ -75,7 +79,7 @@
     "default_value": "true",
     "wizard_ui": "edit",
     "platforms": ["darwin"],
-    "comment": "Галочка TUN на macOS; в params для darwin-tun-inbounds — \"if\": [\"tun\"]"
+    "comment": "Галочка TUN на macOS; TUN inbounds: platforms darwin + \"if\": [\"tun\"]"
   },
   {
     "name": "internal_provider_marker",
@@ -94,7 +98,7 @@
 ]
 ```
 
-**`tun`:** в целевой модели заменяет **`EnableTunForMacOS`** и **`config_params.enable_tun_macos`**; **`@tun`** в JSON не подставляется. Связь с **`darwin-tun`** и запись **`params`** с **`"if": ["tun"]`** — **`applyParams`** / **`GetEffectiveConfig`** (PLAN, миграция).
+**`tun`:** в целевой модели заменяет **`EnableTunForMacOS`** и **`config_params.enable_tun_macos`**; **`@tun`** в JSON не подставляется. TUN inbound на macOS — **`params`** с **`"platforms": ["darwin"]`** и **`"if": ["tun"]`** (**`GetEffectiveConfig`**, PLAN, миграция). Платформа **`darwin-tun`** не используется.
 
 #### Где допускается `@…`
 
@@ -172,19 +176,23 @@
 
 Переменные для **`mixed`**, [Listen Fields](https://sing-box.sagernet.org/configuration/shared/listen/#structure) — PLAN.
 
-#### Условные **`params`**: поле **`if`** (AND)
+#### Условные **`params`**: **`if`** (AND) и **`if_or`** (OR)
 
-К записи **`params`** опционально добавляется **`if`**: массив имён из **`vars`**. Запись применяется, если совпала платформа **и** все перечисленные переменные истинны (критерий для строк/bool — PLAN). Без **`if`** — фильтр только по платформе и текущим правилам **`darwin-tun`**. Для macOS-галочки TUN: переменная **`tun`** (**`type`: `bool`**, **`platforms`: [`darwin`]**) и у блока TUN-**`inbounds`** с **`platforms`: [`darwin-tun`]** (как в **`bin/wizard_template.json`**) в целевом шаблоне указывается **`"if": ["tun"]`**, чтобы TUN-inbound не мержился при **`tun`** = ложь.
+К записи **`params`** опционально добавляется **`if`**: массив имён из **`vars`**. Запись применяется, если совпала платформа **и** все перечисленные переменные истинны **на текущей ОС** (учёт **`vars[].platforms`** — PLAN). Опционально **`if_or`**: истинна **хотя бы одна** из перечисленных bool-переменных; **`if`** и **`if_or`** в одной записи не сочетаются.
 
-**Порядок сборки:** разрешить все переменные → отфильтровать **`params`** (платформа, **`if`**) → мерж → заменить **`@…`**.
+**Уточнение (контракт):** для каждого имени в **`if`** / **`if_or`** сначала проверяется **`VarAppliesOnGOOS(vars[].platforms, runtime.GOOS)`** (пустой список **`platforms`** → переменная на всех ОС; иначе только перечисленные ОС; для **windows/386** также матчится **`win7`**). Если переменная **не** объявлена на текущей ОС, она для условия считается **ложной** (как «нет истинной переменной»), **независимо** от строки в **`state.vars`** и от **`ResolveTemplateVars`**. Так **`tun_builtin`** с **`platforms`: [`windows`, `linux`]** на **darwin** не даёт истины в **`if_or`**, а **`tun`** только под **darwin** на **linux** не проходит **`if`**. Код: **`ParamBoolVarTrue`** / **`ParamIfSatisfied`** / **`ParamIfOrSatisfied`** в **`ui/wizard/template/vars_resolve.go`**; тесты **`TestParamBoolVarTrue_respectsVarPlatforms`**, **`TestParamIfSatisfied_falseWhenVarNotOnGOOSEvenIfResolvedTrue`**, **`TestParamIfSatisfied_AND_falseWhenOneOperandNotOnGOOS`**.
 
-**Пример:**
+Без **`if`** / **`if_or`** — фильтр только по **`platforms`**. Для macOS TUN: переменная **`tun`** (**`type`: `bool`**, **`platforms`: [`darwin`]**) и блок TUN-**`inbounds`** с **`"platforms": ["darwin"]`**, **`"if": ["tun"]`** (см. **`bin/wizard_template.json`**).
+
+**Порядок сборки:** разрешить все переменные → отфильтровать **`params`** (платформа, **`if`** / **`if_or`**) → мерж → заменить **`@…`**.
+
+**Пример (`if_or` для `route.rules`):**
 
 ```json
 {
   "name": "route.rules",
-  "platforms": ["windows", "linux", "darwin-tun"],
-  "if": ["apply_tun_sniff_rules"],
+  "platforms": ["windows", "linux", "darwin"],
+  "if_or": ["tun_builtin", "tun"],
   "mode": "prepend",
   "value": [
     { "inbound": "tun-in", "action": "resolve", "strategy": "prefer_ipv4" },
@@ -199,15 +207,15 @@
 
 ---
 
-## Целевой набор переменных **`vars`** (MVP)
+## Целевой набор переменных **`vars`**
 
-Имена в шаблоне — **`snake_case`**, латиница (см. лексику **`name`**). Ниже — что завести под Settings; соответствие вашим рабочим названиям — в колонке «Смысл».
+Имена в шаблоне — **`snake_case`**, латиница (см. лексику **`name`**). Ниже — **полный** набор переменных под Settings (первая поставка фичи, без урезания); соответствие рабочим названиям — в колонке «Смысл».
 
 | **`vars[].name`** | Смысл (ваши имена) | **`type`** | **`platforms`** | Куда попадает в конфиг | **`@…`** | Дефолт / примечание |
 |-------------------|-------------------|------------|-----------------|-------------------------|----------|---------------------|
 | **`tun_address`** | tunAddress, CIDR TUN | `text` | не задано (все ОС, где есть строка TUN в UI) | **`params`**, TUN `address[]` | `@tun_address` | из шаблона / **`default_node`** — PLAN |
 | **`tun_mtu`** | mtu | `text` | не задано | **`params`**, TUN `mtu` (число) | `@tun_mtu` | строка в **`value`**, в JSON — **число** (парсинг — PLAN); текущий шаблон: `1492` |
-| **`tun`** | isTun под Mac | `bool` | **`["darwin"]`** | только **`if`** и выбор **`darwin-tun`** / **`darwin`** | — | **`@tun`** не подставляется |
+| **`tun`** | isTun под Mac | `bool` | **`["darwin"]`** | только **`if`** / **`if_or`** вместе с **`darwin`** **params** | — | **`@tun`** не подставляется |
 | **`mixed_listen_port`** | proxy-port = `listen_port` (mixed, только macOS-ветка без TUN) | `text` | **`["darwin"]`** | **`params`**, mixed inbound `listen_port` | `@mixed_listen_port` | формат: порт (число), см. **`comment`**; узел — запись **`inbounds`** с **`platforms`: [`darwin`]** (см. **`bin/wizard_template.json`**) |
 | **`log_level`** | log_level | `enum` | не задано | **`config.log.level`** | `@log_level` | уровни — по ядру (PLAN) |
 | **`clash_api`** | Clash API = `external_controller` | `text` | не задано | **`config.experimental.clash_api.external_controller`** | `@clash_api` | формат **`host:port`** в **`comment`** |
@@ -241,9 +249,7 @@
 
 ### 4. TUN для macOS
 
-**Как сейчас в продукте (код):** в **`wizard_template.json` галочки нет** — там лишь **`params`** с **`"platforms": ["darwin-tun"]`** для TUN. Включение TUN на macOS — это **флаг модели визарда** **`EnableTunForMacOS`**, который пользователь меняет **галочкой на вкладке Rules** (`rules_tab.go`). При **Save** в **`state.json`** уходит не `vars[]`, а **`config_params`**: на darwin добавляется **`{ "name": "enable_tun_macos", "value": "true" | "false" }`** (`presenter_state.go`). **`GetEffectiveConfig`** (`loader.go`): при **`true`** на darwin учитывается платформа **`darwin-tun`** и мержатся TUN-**`params`**; при **`false`** остаётся ветка **`darwin`** с **mixed**, без TUN inbound.
-
-**Цель 032:** та же семантика **`darwin-tun`** / **`darwin`**, но чекбокс перенести на **Settings**; в **`vars`** — **`name`: `tun`**, **`type`: `bool`**, **`platforms`: [`darwin`]**; в **`state.vars`** — переопределение **`tun`**. У элемента **`params`** с TUN-**`inbounds`** и **`platforms`: [`darwin-tun`]** добавить **`"if": ["tun"]`** (см. сквозной пример ниже). Хранение вместо (или после миграции с) **`config_params.enable_tun_macos`** — PLAN. Дефолты из **`vars`** и «Сброс» — как у остальных переменных. Локали — CONSTITUTION / PLAN.
+**Текущий продукт:** в **`wizard_template.json`** объявлена переменная **`tun`** и блок TUN-**`inbounds`** с **`"platforms": ["darwin"]`**, **`"if": ["tun"]`**. Пользователь переключает TUN на вкладке **Settings**; в **`state.json`** — **`vars`**. Устаревший **`config_params.enable_tun_macos`** при **LoadState** мигрирует в **`vars.tun`**. Отдельного поля **`EnableTunForMacOS`** в модели нет. Значение **`darwin-tun`** в **`platforms`** не совпадает с **`runtime.GOOS`** на macOS (**`darwin`**), поэтому такие блоки не применяются.
 
 ---
 
@@ -253,7 +259,7 @@
 
 **1) `vars`**
 
-Один CIDR на все TUN-inbound. **`tun`** в примере ниже — **целевая** модель (шаблон + **`state.vars`**); **сейчас** тот же смысл даёт **`config_params.enable_tun_macos`** + галочка на **Rules** (см. §4). Через **`@…`** имя **`tun`** **не** подставляется — оно участвует в **`if`** и в выборе **`darwin-tun`**. Опционально отдельный bool для **`if`** у **`route.rules`**.
+Один CIDR на все TUN-inbound. **`tun`** в примере — шаблон + **`state.vars`** (см. §4). Ранее (до 032) эквивалент задавался **`config_params.enable_tun_macos`** и галочкой на **Rules**. Через **`@…`** имя **`tun`** **не** подставляется — оно участвует в **`if`** / **`if_or`**. Опционально отдельный bool (**`apply_tun_sniff_rules`**) для **`if`** у **`route.rules`** — в шаблоне по умолчанию не используется.
 
 ```json
 "vars": [
@@ -270,7 +276,7 @@
     "default_value": "true",
     "wizard_ui": "edit",
     "platforms": ["darwin"],
-    "comment": "Галочка TUN macOS; params darwin-tun inbounds: if [tun]"
+    "comment": "Галочка TUN macOS; params darwin inbounds + if [tun]"
   },
   {
     "name": "apply_tun_sniff_rules",
@@ -296,7 +302,7 @@
 
 **2) TUN в `params`**
 
-Для **одного** CIDR (**`type: text`**, **`tun_address`**) во всех записях с **`type: "tun"`** (платформы **`windows`/`linux`**, **`win7`**, **`darwin-tun`**) используйте один плейсхолдер в **`address`**:
+Для **одного** CIDR (**`type: text`**, **`tun_address`**) во всех записях с **`type: "tun"`** (платформы **`windows`/`linux`**, **`win7`**, **`darwin`** с **`if`**) используйте один плейсхолдер в **`address`**:
 
 ```json
 {
@@ -317,14 +323,14 @@
 }
 ```
 
-Для **`win7`** и **`darwin-tun`** — тот же приём с **`address": ["@tun_address"]`** (отличаются **`platforms`**, **`stack`**, наличие **`interface_name`** — как в текущем шаблоне). **`@…`** не ставить в **`parser_config`**.
+Для **`win7`** и **macOS TUN** — тот же приём с **`address": ["@tun_address"]`** (отличаются **`platforms`**, **`stack`**, наличие **`interface_name`** — как в текущем шаблоне). **`@…`** не ставить в **`parser_config`**.
 
-**macOS, TUN-inbound (`darwin-tun`):** в целевом шаблоне у записи с **`"name": "inbounds"`**, **`"platforms": ["darwin-tun"]`** (аналог фрагмента **`bin/wizard_template.json`** ~462–476) добавляется **`"if": ["tun"]`**. Пока **`tun`** в **`vars`** объявлена как **`type`: `bool`**, **`platforms`: [`darwin`]**, эта запись **`params`** попадает в мерж только при истинной **`tun`** (и при активной ветке **`darwin-tun`** — PLAN / **`GetEffectiveConfig`**).
+**macOS, TUN-inbound:** запись **`"name": "inbounds"`**, **`"platforms": ["darwin"]`**, **`"if": ["tun"]`** (см. **`bin/wizard_template.json`**).
 
 ```json
 {
   "name": "inbounds",
-  "platforms": ["darwin-tun"],
+  "platforms": ["darwin"],
   "if": ["tun"],
   "value": [
     {
@@ -340,13 +346,13 @@
 }
 ```
 
-**3) `route.rules` с `if`**
+**3) `route.rules` с `if_or`**
 
 ```json
 {
   "name": "route.rules",
-  "platforms": ["windows", "linux", "darwin-tun"],
-  "if": ["apply_tun_sniff_rules"],
+  "platforms": ["windows", "linux", "darwin"],
+  "if_or": ["tun_builtin", "tun"],
   "mode": "prepend",
   "value": [
     { "inbound": "tun-in", "action": "resolve", "strategy": "prefer_ipv4" },
@@ -355,7 +361,7 @@
 }
 ```
 
-**4) `tun`:** целевой вариант — **`vars`** + **`state.vars`**; плюс **`"if": ["tun"]`** у TUN-**`inbounds`** для **`darwin-tun`**. **Сейчас** то же по смыслу: флаг модели и **`config_params.enable_tun_macos`** (без **`if`** в JSON шаблона — логика в коде).
+**4) `tun`:** **`vars`** + **`state.vars`** и **`"if": ["tun"]`** у TUN-**`inbounds`** на **`darwin`** — в продукте (см. **`bin/wizard_template.json`**).
 
 **5) Пример `state.json` (целевой формат с `vars`)**
 
@@ -366,7 +372,7 @@
 ]
 ```
 
-До миграции с **`config_params.enable_tun_macos`** смотри **`config_params`** в **`state.json`**, не этот массив.
+В старых снимках state без **`vars.tun`** значение может приходить из **`config_params.enable_tun_macos`** до однократной миграции при загрузке.
 
 Если **`tun_address`** пользователь не трогал — записи в **`state.vars`** нет, адрес берётся из **`default_value`** / **`default_node`** в шаблоне.
 
@@ -423,7 +429,7 @@
 |------------|------------|------|------|--------|
 | **`tun_address`** | **`vars`** | **`params`**, `address[]` | — | — |
 | **`tun_mtu`** | **`vars`** | **`params`**, TUN `mtu` | — | — |
-| **`tun`** | **`vars`** | — | **`params`**, `inbounds`, **`darwin-tun`** | **`darwin-tun`** / **`darwin`** (PLAN) |
+| **`tun`** | **`vars`** | — | **`params`**, `inbounds`, **`darwin` + if** | — |
 | **`mixed_listen_port`** | **`vars`** | **`params`**, mixed `listen_port`, **`darwin`** | — | — |
 | **`apply_tun_sniff_rules`** | **`vars`** | — | **`route.rules`** | — |
 | **`log_level`** | **`vars`** | **`config.log.level`** | — | — |
@@ -485,7 +491,7 @@
 
 ## Зависимости и ссылки
 
-- `bin/wizard_template.json`, `ui/wizard/template/loader.go`, `create_config.go`, `wizard_model.go`, `rules_tab.go` (TUN UI).
+- `bin/wizard_template.json`, `ui/wizard/template/loader.go`, `create_config.go`, `wizard_model.go`, `ui/wizard/tabs/settings_tab.go`, `rules_tab.go`.
 - sing-box: [Configuration](https://sing-box.sagernet.org/configuration/), [TUN](https://sing-box.sagernet.org/configuration/inbound/tun/), [Mixed](https://sing-box.sagernet.org/configuration/inbound/mixed/), [Listen Fields](https://sing-box.sagernet.org/configuration/shared/listen/#structure).
 
 ---

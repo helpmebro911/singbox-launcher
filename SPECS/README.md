@@ -40,7 +40,26 @@
 2. Написать SPEC.md.
 3. Написать PLAN.md, разбить на TASKS.md.
 4. Реализовать по TASKS с учётом [IMPLEMENTATION_PROMPT.md](IMPLEMENTATION_PROMPT.md), заполнить IMPLEMENTATION_REPORT.md.
-5. При завершении переименовать папку: заменить статус на **C** (Complete).
+5. Пройти [чеклист закрытия задачи](#closing-task-checklist) (тесты, доки, статус папки).
+6. При завершении переименовать папку: заменить статус на **C** (Complete).
+
+<a id="closing-task-checklist"></a>
+
+## Закрытие задачи (чеклист)
+
+Ритуал после реализации по **TASKS.md** — чтобы spec-driven давал предсказуемый результат и не терялись доки/релиз.
+
+1. **Сборка и проверки:** `go build ./...`, `go test ./...`, `go vet ./...` (локально; в CI — скрипты в `build/`, см. [docs/TEST_README.md](../docs/TEST_README.md) и корневой README).
+2. **Границы задачи:** менять только то, что покрыто **SPEC** / **PLAN** / **TASKS**; новые файлы — как в плане. Расширение scope без явного согласования — см. корневой [AGENTS.md](../AGENTS.md).
+3. **Артефакты задачи:** все пункты **TASKS.md** отражают факт (в т.ч. `[x]`); заполнен **IMPLEMENTATION_REPORT.md** (или эквивалент в папке задачи).
+4. **Документация для релиза и архитектуры** (подробная таблица — [AGENTS.md § 4–6](../AGENTS.md)):
+   - поведение / заметные изменения → **docs/release_notes/upcoming.md** (EN и при необходимости RU);
+   - потоки данных, зоны ответственности → **docs/ARCHITECTURE.md** (если менялись);
+   - сильный UX → **RELEASE_NOTES.md**.
+5. **Принципы проекта:** [CONSTITUTION.md](CONSTITUTION.md) (логирование, запреты, UI), [IMPLEMENTATION_PROMPT.md](IMPLEMENTATION_PROMPT.md) (DoD, Git, консоль).
+6. **Статус в имени папки:** переименовать `SPECS/NNN-T-S-NAME/` → `…-C-…` когда задача принята как Complete.
+
+Краткий чеклист для агентов дублируется в [AGENTS.md § 6](../AGENTS.md) (с отсылкой сюда).
 
 ## Текущий список (кратко)
 
@@ -65,7 +84,7 @@
 - **029** — исследование (Q-С): SUBSCRIPTION_PARSER_CLASH_CONVERTOR_PARITY (доработки парсера подписок под **sing-box**, реализованы; папка исторически от сравнения с [clash-convertor](https://github.com/DikozImpact/clash-convertor); **SPECS/029-Q-С-SUBSCRIPTION_PARSER_CLASH_CONVERTOR_PARITY/SPEC.md**)
 - **030** — баг в плане (B-N): WINDOWS_FOREGROUND_FOCUS_LOSS (Windows: периодический слёт фокуса ввода в других приложениях при работающем лаунчере; поиск причины и корреляция с UI/треем; **SPECS/030-B-N-WINDOWS_FOREGROUND_FOCUS_LOSS/SPEC.md**)
 - **031** — фича завершена (F-С): LINUX_SINGBOX_LOOKPATH (Linux: сначала `exec.LookPath("sing-box")`, иначе `<ExecDir>/bin/sing-box`; установка ядра из лаунчера — только в локальный `bin/`; **SPECS/031-F-С-LINUX_SINGBOX_LOOKPATH/SPEC.md**)
-- **032** — фича в плане (F-N): WIZARD_SETTINGS_TAB (вкладка **Settings** в визарде: TUN, Clash API, log и др.; **SPECS/032-F-N-WIZARD_SETTINGS_TAB/SPEC.md**)
+- **032** — фича завершена (F-C): WIZARD_SETTINGS_TAB (вкладка **Settings**, **`vars`** в шаблоне и state, TUN macOS с **Rules** на **Settings**; **SPECS/032-F-C-WIZARD_SETTINGS_TAB/**)
 - **033** — фича в плане (F-N): SUBSCRIPTION_XRAY_JSON_ARRAY (подписка как JSON-массив **Xray/V2Ray** полных конфигов, `dialerProxy` + пер-серверный SOCKS → sing-box **`detour`**; **SPECS/033-F-N-SUBSCRIPTION_XRAY_JSON_ARRAY/SPEC.md**)
 
 Подробное описание каждой задачи — в SPEC.md соответствующей папки.

@@ -350,7 +350,7 @@ StateStore.ListWizardStateNames()
 - **CustomRules** — пользовательские правила (из `model.CustomRules`), включая поле `type` с типом правила
 
 **Не сохраняются (генерируются/загружаются заново):**
-- **TemplateData** — шаблон конфигурации загружается из файла (`config_template.json` или `config_template_macos.json`) всегда при генерации конфига (определяет структуру и секции):
+- **TemplateData** — шаблон конфигурации загружается из файла (`wizard_template.json`) всегда при генерации конфига (определяет структуру и секции):
   - `Sections` (map[string]json.RawMessage) — секции конфига из шаблона (route, dns, inbounds, outbounds, experimental и т.д.). **Всегда используются из шаблона** для генерации конфига
   - `SectionOrder` ([]string) — порядок секций в шаблоне. **Всегда используется из шаблона** для сохранения порядка при генерации
   - `SelectableRules` ([]TemplateSelectableRule) — правила из шаблона (из `@SelectableRule` блоков). **В режиме редактирования НЕ используются** (правила берутся из `state.json`), **в режиме "Настроить заново" используются** для инициализации
@@ -596,7 +596,7 @@ type WizardStateMetadata struct {
 
 При восстановлении состояния из `WizardStateFile` выполняется следующая последовательность:
 
-1. **Загрузить шаблон** (`TemplateData`) из файла (`config_template.json` или `config_template_macos.json`)
+1. **Загрузить шаблон** (`TemplateData`) из файла (`wizard_template.json`)
    - Шаблон используется для генерации конфига (структура и секции)
 
 2. **Восстановить `parser_config`:**
