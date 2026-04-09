@@ -11,7 +11,7 @@
 - **Читаемость шаблона:** в **`wizard_template.json` → `config`** явно видны **`@…`** для полей, которыми управляет вкладка **DNS** (как для **`@log_level`**).
 - **Один механизм:** объявления и дефолты — в корневом **`vars`**, переопределения пользователя — только в **`state.json` → `vars`** (**`name` / `value`**), без «псевдопеременных» и без сохранения этих скаляров в **`state.json` → `dns_options`**.
 - **Секция `dns_options` в шаблоне и объект `dns_options` в `state.json`:** после реализации содержат **только** **`servers`** и **`rules`**. В элементах **`servers`** по-прежнему допускаются визард-поля (**`description`**, **`enabled`**, **`detour`**, …) и поля sing-box. **Не** хранить в **`dns_options`** корневые ключи **`strategy`**, **`independent_cache`**, **`final`**, **`default_domain_resolver`**, **`default_domain_resolver_unset`**, **`dns.final`**, **`route.default_domain_resolver`** — всё это задаётся **`config` + `vars`** и **`state.vars`**.
-- **UI:** вкладка **DNS** без изменения сценариев; элементы **`vars`** с **`type: custom`**, **`wizard_ui: hidden`** (без строк на **Settings**). В **`comment`** у переменной указать, что значение задаётся на вкладке **DNS** (язык комментариев — по **CONSTITUTION** для шаблона, обычно EN).
+- **UI:** вкладка **DNS** без изменения сценариев; элементы **`vars`** с типами из таблицы (**enum/bool/text**) и **`wizard_ui: fix`** (без строк на **Settings**). В **`comment`** у переменной указать, что значение задаётся на вкладке **DNS** (язык комментариев — по **CONSTITUTION** для шаблона, обычно EN).
 
 ---
 
@@ -22,7 +22,7 @@
 | `vars[].name` | Смысл (вкладка DNS) | Где маркер **`@…`** в шаблоне | Примечание |
 |---------------|---------------------|-------------------------------|------------|
 | **`dns_strategy`** | **Strategy** (`dns.strategy`) | **`config.dns.strategy`** | Значение — строка, допустимые литералы как у sing-box и текущего селекта DNS. |
-| **`dns_independent_cache`** | **Раздельный кеш** (`independent_cache`) | **`config.dns.independent_cache`** | В **`state.vars`** — строка **`"true"`** / **`"false"`**; в итоговом JSON — **bool** (как для числовых **`@tun_mtu`** — отдельный проход при подстановке, зафиксировать в **PLAN**). |
+| **`dns_independent_cache`** | **Раздельный кеш** (`independent_cache`) | **`config.dns.independent_cache`** | **`type: bool`**, **`wizard_ui: fix`**: в **`state.vars`** — строки **`"true"`** / **`"false"`**; в итоговом JSON — **bool** (общая ветка подстановки для **`bool`**). |
 | **`dns_default_domain_resolver`** | **Default domain resolver** (тег сервера) | **`config.route.default_domain_resolver`** | Строка — **тег** из списка серверов; динамический список в UI без изменений. |
 | **`dns_final`** | **Final** (тег сервера для `dns.final`) | **`config.dns.final`** | Строка — **тег** сервера (как в селекте **Final** на вкладке DNS). |
 
@@ -36,8 +36,8 @@
 
 Для **каждой** из четырёх строк таблицы:
 
-- **`type`:** **`custom`**
-- **`wizard_ui`:** **`hidden`**
+- **`type`:** для **`dns_strategy`** — **`enum`**; для **`dns_independent_cache`** — **`bool`**; для **`dns_default_domain_resolver`** и **`dns_final`** — **`text`**.
+- **`wizard_ui`:** **`fix`** (строка на вкладке **Settings** не показывается; правка только с вкладки **DNS**).
 - **`default_node`** (предпочтительно): путь к узлу в **`config`** после загрузки шаблона, например **`config.dns.strategy`**, **`config.dns.independent_cache`**, **`config.route.default_domain_resolver`**, **`config.dns.final`** — чтобы дефолт совпадал со скелетом.
 - **`default_value`:** при необходимости fallback, если **`default_node`** пуст (порядок разрешения — **SPEC 032**).
 - **`comment`:** явно: переменная **DNS tab** / **Settings hidden** / кратко что в sing-box (для автора шаблона).
@@ -71,3 +71,6 @@
 ## 7. Историческая справка
 
 Ранее в репозитории было зафиксировано решение **не** переносить DNS-скаляры в **`vars`**. Текущий документ **заменяет** то решение: перенос **принят**; старые формулировки в доках — до прохода реализации.
+
+
+
